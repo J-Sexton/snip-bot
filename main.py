@@ -4,32 +4,43 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from sigsaur_webscrap import get_sigsauer_product_list
+import sys
 import sched, time
 import smtplib
 from email.message import EmailMessage
 import threading
 import os
+import json
+
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
 # TODO: improve logic to make this custom with flags
-chrome_driver_parth = os.path.dirname(os.path.abspath(__file__)) + '/chromedriver'
+# TODO: pass in through variables
+FROM_USER_NAME = config['from_email_address']
+FROM_EMAIL_PASSWORD = config['from_email_password']
+TO_USER_NAME = config['to_email']
+CHROME_DRIVER_PATH = config['chrome_driver_path']
+
+# LOGIC for Chrome Driver set-up
+chrome_driver_parth = os.path.dirname('/usr/bin/chromedriver')
 chrome_options = Options()
 chrome_options.add_argument("--disable-extensions")
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--headless")
-known_sigsaur_instock = [0]
-FROM_USER_NAME = 'mister.cripto@gmail.com'
-TO_USER_NAME = '7068472405@vtext.com'
-#TODO: pass in through variables
+chrome_options.add_argument("--no-sandbox")
 try:
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
-    server.login(FROM_USER_NAME, 'vems lhzg hucd zdlw')
+    server.login(FROM_USER_NAME, FROM_EMAIL_PASSWORD)
 except Exception as e:
     print(e)
     exit(e)
 
+known_sigsaur_instock = [0]
 
 def main():
-    driver = webdriver.Chrome(chrome_driver_parth, options=chrome_options)
+    driver = webdriver.Chrome(CHROME_DRIVER_PATH, options=chrome_options)
     print(time.time())
     global known_sigsaur_instock
     sigsaur_instock = get_sigsauer_product_list('ammunition.html?caliber=1915%2C1917',driver)
@@ -48,6 +59,9 @@ def compare_knownstock_with_received_stock(current_stock):
         if item not in known_sigsaur_instock:
             stock_changes.append(item)
     return stock_changes
+
+# display = Display(visible=0, size=(800, 600))
+# display.start()
 
 scheduler = sched.scheduler(time.time, time.sleep)
 print ('START:', time.time())
